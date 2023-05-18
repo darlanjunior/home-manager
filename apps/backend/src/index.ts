@@ -1,26 +1,35 @@
-import express from "express";
-import * as trpcExpress from "@trpc/server/adapters/express";
-import cors from "cors";
-import { createRouter } from "./app/app.router";
-
-const appRouter = createRouter().query('asdf', {
-  resolve: () => { return 'oie' }
-})
-
+import { inferAsyncReturnType, initTRPC } from '@trpc/server';
+import { createHTTPServer } from '@trpc/server/adapters/standalone';
+import cors from 'cors';
+import { z } from 'zod';
+export const t = initTRPC.create();
+export const appRouter = t.router({
+  getUser: t.procedure.input(z.string()).query((opts): { error: string } | {id: string, name: string } => {
+    if (opts.input === 'oie') return { error: 'sim '}
+    return { id: opts.input, name: 'Bilbo' };
+  }),
+  createUser: t.procedure
+    .input(z.object({ name: z.string().min(5) }))
+    .mutation(async (opts) => {
+      // use your ORM of choice
+      if (opts.input.name === 'bunda') return 'nao'
+      return 'sim'
+    }),
+});
+// export type definition of API
 export type AppRouter = typeof appRouter;
 
-const app = express();
-
-app.use(cors());
-
-app.use(
-  "/trpc",
-  trpcExpress.createExpressMiddleware({
-    router: appRouter,
-    createContext: () => null,
-  })
-);
-
-app.listen(4000, () => {
-  console.log("The application is listening on port 4000!");
-});
+createHTTPServer({
+  router: appRouter,
+  middleware: cors({ 
+    origin: ["http://localhost:19000", "http://localhost:3001"],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token', 'sentry-trace'],
+    maxAge: 600,
+    exposedHeaders: ['*', 'Authorization']
+  }), 
+  createContext() {
+    console.log('context 3');
+    return {};
+  },
+}).listen(5000);
