@@ -28,8 +28,4 @@ createHTTPServer({
     maxAge: 600,
     exposedHeaders: ['*', 'Authorization']
   }), 
-  createContext() {
-    console.log('context 3');
-    return {};
-  },
 }).listen(5000);
